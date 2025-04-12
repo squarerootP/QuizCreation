@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Button, StringVar, Frame, messagebox, Checkbutton, IntVar, ttk, PhotoImage, Menu
+from tkinter import Tk, Label, Button, StringVar, Frame, messagebox, Checkbutton, IntVar, ttk, PhotoImage, Menu, Toplevel
 import random
 import re
 import pickle
@@ -23,6 +23,16 @@ class QuizWindow:
         self.menu_bar = Menu(self.master)
         self.master.config(menu=self.menu_bar)
         
+        # Add File menu
+        self.file_menu = Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="Save Progress", command=self.save_checkpoint, accelerator="Ctrl+S")
+        self.file_menu.add_command(label="Load Progress", command=self.load_checkpoint, accelerator="Ctrl+O")
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Review Incorrect Questions", command=self.review_incorrect_questions)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.master.quit)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        
         # Store fixed font sizes
         self.fonts = {
             'question': ('Arial', 19, 'bold'),
@@ -44,7 +54,9 @@ class QuizWindow:
         self.fullscreen = False
         
         # Checkpoint path
-        self.checkpoint_path = r"C:\Users\Admin\Documents\SP25\DWP\quiz_checkpoint.dat"
+        self.checkpoint_path = r"quiz_checkpoint.dat"
+        # Path for incorrect questions
+        self.incorrect_questions_path = r"incorrect_questions.txt"
         
         # Quiz state
         self.question_dict = question_dict
@@ -367,6 +379,9 @@ class QuizWindow:
             if current_question not in self.incorrect_questions:
                 self.incorrect_questions.append(current_question)
                 
+                # Save incorrect question to file
+                self.save_incorrect_question(current_question)
+                
             self.result_var.set("✗ Incorrect! Try again or press Next to continue.")
             self.result_label.config(fg="#f44336")  # Red for incorrect
             
@@ -383,6 +398,131 @@ class QuizWindow:
         
         # Add the current question to answered questions set
         self.answered_questions.add(current_question)
+
+    def save_incorrect_question(self, question):
+        """Save an incorrectly answered question to a file"""
+        try:
+            # Create the options text in the right format
+            options = self.question_dict[question][0]
+            correct_answers = self.question_dict[question][1]
+            
+            options_text = ""
+            for i, option in enumerate(options):
+                option_letter = chr(65 + i)  # A, B, C, D
+                options_text += f"{option_letter}: {option}\n"
+            
+            # Format the question with the same convention as data.txt
+            formatted_question = f"{question}\n{options_text}&&&&\n"
+            for ans in correct_answers:
+                formatted_question += f"{ans}\n"
+            
+            # Append %%%% at the end
+            formatted_question += "%%%%\n"
+            
+            # Check if file exists to determine if we need to add a new line
+            if os.path.exists(self.incorrect_questions_path):
+                # Check if this question already exists in the file
+                with open(self.incorrect_questions_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    if question in content:
+                        return  # Don't add duplicate questions
+                
+                # Append to the file
+                with open(self.incorrect_questions_path, 'a', encoding='utf-8') as f:
+                    f.write(formatted_question)
+            else:
+                # Create the file and write to it
+                with open(self.incorrect_questions_path, 'w', encoding='utf-8') as f:
+                    f.write(formatted_question)
+        except Exception as e:
+            print(f"Error saving incorrect question: {str(e)}")
+
+    def review_incorrect_questions(self):
+        """Load and review incorrectly answered questions"""
+        # Check if the file exists
+        if not os.path.exists(self.incorrect_questions_path):
+            messagebox.showinfo("No Incorrect Questions", "You haven't answered any questions incorrectly yet.")
+            return
+        
+        try:
+            # Load the incorrect questions from the file
+            with open(self.incorrect_questions_path, 'r', encoding='utf-8') as f:
+                data = f.read()
+            
+            # Parse the questions
+            questions = data.split(r"%%%%")
+            review_dict = {}
+            
+            for question in questions:
+                if not question.strip():
+                    continue
+                    
+                # Split the question into lines
+                lines = question.strip().split('\n')
+                if not lines:
+                    continue
+                
+                # First line is the question text
+                cur_ques = lines[0].strip()
+                
+                # Find options and answers
+                options_section = []
+                answers_section = []
+                in_answers = False
+                
+                for line in lines[1:]:  # Skip the question text line
+                    if '&&&&' in line:
+                        in_answers = True
+                        continue
+                    
+                    if in_answers:
+                        if line.strip():
+                            answers_section.append(line.strip())
+                    else:
+                        options_section.append(line.strip())
+                
+                # Extract options using regex
+                ans_opts = []
+                for option_line in options_section:
+                    if not option_line.strip():
+                        continue
+                    
+                    option_match = re.match(r'([A-D]):\s*(.*)', option_line)
+                    if option_match:
+                        ans_opts.append(option_match.group(2).strip())
+                
+                # If we have options and answers, add to the dictionary
+                if ans_opts and answers_section:
+                    review_dict[cur_ques] = (ans_opts, answers_section)
+            
+            if not review_dict:
+                messagebox.showinfo("No Questions", "No valid questions found in the incorrect questions file.")
+                return
+            
+            # Open a new window with the review quiz
+            self.open_review_window(review_dict)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load incorrect questions: {str(e)}")
+            # Print detailed error info for debugging
+            import traceback
+            traceback.print_exc()
+
+    def open_review_window(self, review_dict):
+        """Open a new window to review incorrect questions"""
+        review_window = Toplevel(self.master)
+        review_window.title("Review Incorrect Questions")
+        review_window.geometry("900x700")
+        review_window.configure(bg="#f0f0f0")
+        
+        # Create a simpler review quiz that won't affect the main window
+        review_quiz = ReviewQuizWindow(review_window, review_dict)
+        
+        # Don't wait for the window - this prevents the main window from being affected
+        review_window.grab_set()
+        
+        # Override the close button to only close this window
+        review_window.protocol("WM_DELETE_WINDOW", review_window.destroy)
 
     def next_question(self):
         self.question_index += 1
@@ -623,6 +763,90 @@ class QuizWindow:
         close_button.pack(pady=20)
         
         # Make sure the window stays on top and becomes the focus
+        results_window.transient(self.master)
+        results_window.grab_set()
+        self.master.wait_window(results_window)
+
+class ReviewQuizWindow(QuizWindow):
+    """A specialized version of QuizWindow for reviewing incorrect questions"""
+    
+    def __init__(self, master, question_dict):
+        # Initialize with the parent class
+        super().__init__(master, question_dict)
+        
+        # Override the close behavior to only close this window
+        self.master.protocol("WM_DELETE_WINDOW", self.close_review)
+        
+        # Update title and add a note
+        self.master.title("Review Incorrect Questions")
+        note_label = Label(
+            self.header_frame,
+            text="REVIEW MODE",
+            font=("Arial", 10, "bold"),
+            bg="#e1e1e1",
+            fg="#f44336"
+        )
+        note_label.pack(side="right", padx=10, pady=5)
+    
+    def close_review(self):
+        """Custom close method that only closes this window"""
+        self.master.destroy()
+    
+    def show_results(self):
+        """Override to only close the review window, not the main app"""
+        results_window = Toplevel(self.master)
+        results_window.title("Review Results")
+        results_window.geometry("600x500")
+        results_window.configure(bg="#f0f0f0")
+        
+        # Results header
+        header_frame = Frame(results_window, bg="#2196f3", padx=10, pady=15)
+        header_frame.pack(fill="x")
+        
+        header_label = Label(
+            header_frame,
+            text="Review Completed!",
+            font=("Arial", 16, "bold"),
+            fg="white",
+            bg="#2196f3"
+        )
+        header_label.pack()
+        
+        # Score information
+        score_frame = Frame(results_window, bg="#ffffff", padx=20, pady=15)
+        score_frame.pack(fill="x", pady=10)
+        
+        score_label = Label(
+            score_frame,
+            text=f"Your Score: {self.score} out of {self.total_questions}",
+            font=("Arial", 14, "bold"),
+            bg="#ffffff"
+        )
+        score_label.pack(pady=5)
+        
+        percentage = (self.score / self.total_questions) * 100
+        percentage_label = Label(
+            score_frame,
+            text=f"Percentage: {percentage:.1f}%",
+            font=("Arial", 12),
+            bg="#ffffff"
+        )
+        percentage_label.pack(pady=5)
+        
+        # Close button - only close the review windows, not the main app
+        close_button = Button(
+            results_window,
+            text="Close",
+            command=lambda: [results_window.destroy(), self.master.destroy()],
+            bg="#e91e63",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=5
+        )
+        close_button.pack(pady=20)
+        
+        # Make window modal to its parent
         results_window.transient(self.master)
         results_window.grab_set()
         self.master.wait_window(results_window)

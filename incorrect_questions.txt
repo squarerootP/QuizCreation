@@ -1,0 +1,8 @@
+Which cloud deployment model lets users use multiple cloud models working together seamlessly?
+A: Hybrid
+B: Public
+C: Private
+D: Broad Network Access
+&&&&
+Hybrid
+%%%%
