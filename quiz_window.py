@@ -715,43 +715,37 @@ class QuizWindow:
                 if not question.strip():
                     continue
                     
-                # Split the question into lines
-                lines = question.strip().split('\n')
-                if not lines:
+                # Split on the first "A: " - same approach as in the main parsing
+                parts = question.strip().split(r"A: ", 1)
+                if len(parts) < 2:
                     continue
                 
-                # First line is the question text
-                cur_ques = lines[0].strip()
+                # Everything before "A: " is the question text
+                cur_ques = parts[0].strip()
                 
-                # Find options and answers
-                options_section = []
-                answers_section = []
-                in_answers = False
+                # Join all lines for regex processing
+                question_text = "A: " + parts[1]
                 
-                for line in lines[1:]:  # Skip the question text line
-                    if '&&&&' in line:
-                        in_answers = True
-                        continue
+                # Find all options using regex
+                option_pattern = r'([A-D]):\s*(.*?)(?=\s*[A-D]:\s*|\s*&&&&|\Z)'
+                options_matches = re.findall(option_pattern, question_text, re.DOTALL)
+                
+                # Extract options
+                ans_opts = [match[1].strip() for match in options_matches]
+                
+                # Find the correct answer(s)
+                answer_pattern = r'&&&&\s*(.*?)(?=\Z)'
+                answer_match = re.search(answer_pattern, question_text, re.DOTALL)
+                
+                if answer_match:
+                    # Get all answers (might be multiple lines)
+                    answers_text = answer_match.group(1)
+                    # Split by lines and clean
+                    answers_section = [ans.strip() for ans in answers_text.splitlines() if ans.strip()]
                     
-                    if in_answers:
-                        if line.strip():
-                            answers_section.append(line.strip())
-                    else:
-                        options_section.append(line.strip())
-                
-                # Extract options using regex
-                ans_opts = []
-                for option_line in options_section:
-                    if not option_line.strip():
-                        continue
-                    
-                    option_match = re.match(r'([A-D]):\s*(.*)', option_line)
-                    if option_match:
-                        ans_opts.append(option_match.group(2).strip())
-                
-                # If we have options and answers, add to the dictionary
-                if ans_opts and answers_section:
-                    review_dict[cur_ques] = (ans_opts, answers_section)
+                    # If we have options and answers, add to the dictionary
+                    if ans_opts and answers_section:
+                        review_dict[cur_ques] = (ans_opts, answers_section)
             
             if not review_dict:
                 messagebox.showinfo("No Questions", "No valid questions found in the incorrect questions file.")
