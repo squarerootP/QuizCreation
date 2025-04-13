@@ -3,27 +3,40 @@ import random
 import re
 import pickle
 import os
-## preprocess data
-
+from tkinter import font as tkfont
 
 class QuizWindow:
     def __init__(self, master, question_dict):
         self.master = master
-        self.master.title("Quiz Application")
-        self.master.geometry("900x700")  # Increased window size
-        self.master.configure(bg="#f0f0f0")  # Set background color
+        self.master.title("Quiz Master")
+        self.master.geometry("1000x700")  # Slightly larger window for better spacing
+        self.master.configure(bg="#f5f7fa")  # Lighter, more modern background
         
-        # Configure a theme
+        # Set application icon (if available)
+        try:
+            self.master.iconbitmap("quiz_icon.ico")
+        except:
+            pass
+        
+        # Configure custom fonts
+        self.custom_font = tkfont.Font(family="Segoe UI", size=11)
+        self.header_font = tkfont.Font(family="Segoe UI", size=10, weight="bold")
+        self.question_font = tkfont.Font(family="Segoe UI", size=14, weight="bold")
+        self.option_font = tkfont.Font(family="Segoe UI", size=13)
+        self.result_font = tkfont.Font(family="Segoe UI", size=12, weight="bold")
+        
+        # Configure a theme with more modern styling
         self.style = ttk.Style()
-        self.style.configure("TFrame", background="#f0f0f0")
-        self.style.configure("TButton", font=("Arial", 10, "bold"), borderwidth=1)
-        self.style.configure("TCheckbutton", background="#f0f0f0")
+        self.style.theme_use('clam')  # Use a more modern theme if available
+        self.style.configure("TFrame", background="#f5f7fa")
+        self.style.configure("TButton", font=("Segoe UI", 11, "bold"), borderwidth=1)
+        self.style.configure("TCheckbutton", background="#f5f7fa")
         
-        # Create menu bar
+        # Create menu bar with modern styling
         self.menu_bar = Menu(self.master)
         self.master.config(menu=self.menu_bar)
         
-        # Add File menu
+        # Add File menu with icons (if available)
         self.file_menu = Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="Save Progress", command=self.save_checkpoint, accelerator="Ctrl+S")
         self.file_menu.add_command(label="Load Progress", command=self.load_checkpoint, accelerator="Ctrl+O")
@@ -33,23 +46,16 @@ class QuizWindow:
         self.file_menu.add_command(label="Exit", command=self.master.quit)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         
-        # Store fixed font sizes
-        self.fonts = {
-            'question': ('Arial', 19, 'bold'),
-            'option': ('Arial', 14),
-            'result': ('Arial', 17, 'bold'),
-            'shortcut': ('Arial', 8),
-            'button': ('Arial', 15, 'bold'),
-            'header': ('Arial', 15)
-        }
-        
-        # Keep references to UI elements for consistency
-        self.font_elements = []
+        # Add Help menu
+        self.help_menu = Menu(self.menu_bar, tearoff=0)
+        self.help_menu.add_command(label="Keyboard Shortcuts", command=self.show_shortcuts)
+        self.help_menu.add_command(label="About", command=self.show_about)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
         
         # Center window on screen
         self.center_window()
         
-        # Remove responsive font resizing - only keep fullscreen toggle
+        # Bind fullscreen toggle
         self.master.bind("<F11>", self.toggle_fullscreen)
         self.fullscreen = False
         
@@ -70,106 +76,134 @@ class QuizWindow:
         self.result_var = StringVar()
         self.result_var.set("")
         self.answered_questions = set()  # Keep track of which questions have been answered
-        
-        # Update progress text
-        self.update_progress_text()
 
-        # Main container
-        self.main_frame = Frame(self.master, bg="#f0f0f0")
-        self.main_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        # Main container with shadow effect
+        self.main_frame = Frame(self.master, bg="#f5f7fa")
+        self.main_frame.pack(fill="both", expand=True, padx=20, pady=15)
         
-        # Header with progress
-        self.header_frame = Frame(self.main_frame, bg="#e1e1e1")
-        self.header_frame.pack(fill="x", pady=5)
+        # Header with progress - more modern styling
+        self.header_frame = Frame(self.main_frame, bg="#e8eef7", padx=10, pady=10)
+        self.header_frame.pack(fill="x", pady=10)
         
-        # Progress indicator
+        # Progress indicator with percentage
+        self.progress_frame = Frame(self.header_frame, bg="#e8eef7")
+        self.progress_frame.pack(side="left", padx=10)
+        
         self.progress_label = Label(
-            self.header_frame, 
+            self.progress_frame, 
             textvariable=self.progress_text,
-            font=("Arial", 10),
-            bg="#e1e1e1"
+            font=self.custom_font,
+            bg="#e8eef7",
+            fg="#333333"
         )
-        self.progress_label.pack(side="left", padx=10, pady=5)
+        self.progress_label.pack(side="top", anchor="w")
         
-        # Score display
+        # Progress bar
+        self.progress_bar = ttk.Progressbar(
+            self.progress_frame, 
+            orient="horizontal", 
+            length=200, 
+            mode="determinate"
+        )
+        self.progress_bar.pack(side="top", pady=5, anchor="w")
+        
+        # Score display with improved styling
+        self.score_frame = Frame(self.header_frame, bg="#e8eef7")
+        self.score_frame.pack(side="right", padx=10)
+        
         self.score_label = Label(
-            self.header_frame,
+            self.score_frame,
             text=f"Score: {self.score}/{self.total_questions}",
-            font=("Arial", 10),
-            bg="#e1e1e1"
+            font=self.custom_font,
+            bg="#e8eef7",
+            fg="#333333"
         )
-        self.score_label.pack(side="right", padx=10, pady=5)
+        self.score_label.pack(side="top")
         
-        # Question section
-        self.question_frame = Frame(self.main_frame, bg="#ffffff", bd=1, relief="solid")
-        self.question_frame.pack(fill="x", pady=10, ipady=10)
+        self.score_percentage = Label(
+            self.score_frame,
+            text=f"({0:.1f}%)" if self.total_questions == 0 else f"({(self.score/self.total_questions)*100:.1f}%)",
+            font=("Segoe UI", 9),
+            bg="#e8eef7",
+            fg="#555555"
+        )
+        self.score_percentage.pack(side="top")
         
+        # Question section with card-like styling
+        self.question_frame = Frame(self.main_frame, bg="#ffffff", bd=1, relief="solid", padx=15, pady=15)
+        self.question_frame.pack(fill="x", pady=10)
+        
+        # Question number label
+        self.question_number = Label(
+            self.question_frame,
+            text=f"Question {self.question_index + 1}",
+            font=("Segoe UI", 10),
+            bg="#ffffff",
+            fg="#666666"
+        )
+        self.question_number.pack(anchor="w", pady=(0, 5))
+        
+        # Question text with better wrapping
         self.question_label = Label(
             self.question_frame, 
             textvariable=self.current_question, 
-            wraplength=700, 
-            font=("Arial", 12, "bold"),
+            wraplength=900, 
+            font=self.question_font,
             bg="#ffffff",
+            fg="#222222",
             justify="left"
         )
-        self.question_label.pack(padx=20, pady=15, anchor="w")
+        self.question_label.pack(anchor="w")
 
-        # Options section
-        self.options_frame = Frame(self.main_frame, bg="#f8f8f8", bd=1, relief="solid")
+        # Options section with modern card styling
+        self.options_frame = Frame(self.main_frame, bg="#f5f7fa", bd=0)
         self.options_frame.pack(fill="both", expand=True, pady=10)
         
-        # Result feedback
-        self.result_frame = Frame(self.main_frame, bg="#f0f0f0")
+        # Result feedback with improved styling
+        self.result_frame = Frame(self.main_frame, bg="#f5f7fa", padx=10, pady=5)
         self.result_frame.pack(fill="x", pady=5)
         
         self.result_label = Label(
             self.result_frame, 
             textvariable=self.result_var, 
-            font=("Arial", 12, "bold"),
-            bg="#f0f0f0"
+            font=self.result_font,
+            bg="#f5f7fa"
         )
         self.result_label.pack(pady=5)
         
-        # Controls
-        self.controls_frame = Frame(self.main_frame, bg="#f0f0f0")
+        # Controls with modern button styling
+        self.controls_frame = Frame(self.main_frame, bg="#f5f7fa")
         self.controls_frame.pack(fill="x", pady=10)
         
-        # Keyboard shortcuts info
-        self.shortcut_frame = Frame(self.controls_frame, bg="#f0f0f0")
-        self.shortcut_frame.pack(side="left", padx=10)
-        
-        self.shortcut_label = Label(
-            self.shortcut_frame,
-            text="Shortcuts: 1-4 = Select Option | ↵ = Submit | Space = Submit | → = Next | ← = Previous | Ctrl+S = Save | Ctrl+O = Load | F11 = Fullscreen",
-            font=("Arial", 8),
-            bg="#f0f0f0",
-            fg="#666666"
-        )
-        self.shortcut_label.pack(side="left")
-        
         # Button frame
-        self.button_frame = Frame(self.controls_frame, bg="#f0f0f0")
+        self.button_frame = Frame(self.controls_frame, bg="#f5f7fa")
         self.button_frame.pack(side="right", padx=10)
 
         self.prev_button = Button(
             self.button_frame, 
-            text="← Pre",
+            text="← Previous",
             command=self.prev_question,
             bg="#9e9e9e",
             fg="white",
-            font=("Arial", 10, "bold"),
-            padx=15
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            relief="flat",
+            activebackground="#8e8e8e",
+            activeforeground="white"
         )
         self.prev_button.pack(side="left", padx=5)
 
         self.submit_button = Button(
             self.button_frame, 
-            text="Submit",
+            text="Submit Answer",
             command=self.submit_answer,
             bg="#4caf50",
             fg="white",
-            font=("Arial", 10, "bold"),
-            padx=15
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            relief="flat",
+            activebackground="#43a047",
+            activeforeground="white"
         )
         self.submit_button.pack(side="left", padx=5)
 
@@ -179,10 +213,26 @@ class QuizWindow:
             command=self.next_question,
             bg="#2196f3",
             fg="white",
-            font=("Arial", 10, "bold"),
-            padx=15
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            relief="flat",
+            activebackground="#1e88e5",
+            activeforeground="white"
         )
         self.next_button.pack(side="left", padx=5)
+        
+        # Keyboard shortcuts info - more subtle placement
+        self.shortcut_frame = Frame(self.controls_frame, bg="#f5f7fa")
+        self.shortcut_frame.pack(side="left", padx=10)
+        
+        self.shortcut_label = Label(
+            self.shortcut_frame,
+            text="Press ? for keyboard shortcuts",
+            font=("Segoe UI", 8),
+            bg="#f5f7fa",
+            fg="#888888"
+        )
+        self.shortcut_label.pack(side="left")
 
         # Set up keyboard shortcuts
         self.master.bind("<Right>", lambda event: self.next_question())
@@ -192,73 +242,218 @@ class QuizWindow:
         self.master.bind("3", lambda event: self.toggle_option(2))
         self.master.bind("4", lambda event: self.toggle_option(3))
         self.master.bind("<Return>", lambda event: self.submit_answer())
-        self.master.bind("<space>", lambda event: self.submit_answer())  # Space bar to submit
+        self.master.bind("<space>", lambda event: self.submit_answer())
         self.master.bind("<Control-s>", lambda event: self.save_checkpoint())
         self.master.bind("<Control-o>", lambda event: self.load_checkpoint())
+        self.master.bind("?", lambda event: self.show_shortcuts())
 
+        # Now that all UI elements are created, update the progress text and bar
+        self.update_progress_text()
         self.load_question()
     
     def center_window(self):
         """Center the window on the screen"""
-        # Update the window to ensure correct size calculations
         self.master.update_idletasks()
         
-        # Get screen and window dimensions
         screen_width = self.master.winfo_screenwidth()
         screen_height = self.master.winfo_screenheight()
-        window_width = 1200  # Initial window width
-        window_height = 700  # Initial window height
+        window_width = 1000
+        window_height = 700
         
-        # Calculate position coordinates
         x = (screen_width - window_width) // 2
         y = (screen_height - window_height) // 2
         
-        # Set the window position
-        self.master.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.master.geometry(f"{window_width}x{window_height}+{x}+{y-60}")
     
     def update_progress_text(self):
         self.progress_text.set(f"Question {self.question_index + 1} of {self.total_questions}")
+        if hasattr(self, 'question_number'):
+            self.question_number.config(text=f"Question {self.question_index + 1}")
+        self.update_progress_bar()
         
+    def update_progress_bar(self):
+        progress = (self.question_index / self.total_questions) * 100 if self.total_questions > 0 else 0
+        self.progress_bar["value"] = progress
+    
     def update_score_display(self):
         self.score_label.config(text=f"Score: {self.score}/{self.total_questions}")
+        percentage = (self.score / self.total_questions) * 100 if self.total_questions > 0 else 0
+        self.score_percentage.config(text=f"({percentage:.1f}%)")
 
     def toggle_option(self, index):
         """Toggle the checkbox at the given index if it exists"""
-        if index < len(self.answer_vars):
+        if hasattr(self, 'answer_vars') and index < len(self.answer_vars):
             current_value = self.answer_vars[index].get()
             self.answer_vars[index].set(1 - current_value)  # Toggle between 0 and 1
             
             # Visual feedback when toggling
             if current_value == 0:
-                self.checkbuttons[index].config(bg="#e0f7fa")  # Light blue when selected
+                self.option_frames[index].config(bg="#e3f2fd")  # Light blue when selected
+                self.checkbuttons[index].config(bg="#e3f2fd")
             else:
-                self.checkbuttons[index].config(bg="#f8f8f8")  # Default background
-
-    def create_ui_element(self, element_type, parent, **kwargs):
-        """Create UI element with fixed font size"""
-        font_tuple = self.fonts.get(element_type, ('Arial', 10))
-        
-        if 'font' in kwargs:
-            del kwargs['font']
-            
-        if element_type == 'label':
-            element = Label(parent, font=font_tuple, **kwargs)
-        elif element_type == 'button':
-            element = Button(parent, font=font_tuple, **kwargs)
-        elif element_type == 'checkbutton':
-            element = Checkbutton(parent, font=font_tuple, **kwargs)
-        else:
-            return None
-            
-        # Add to elements list for reference
-        self.font_elements.append((element, element_type))
-        return element
+                self.option_frames[index].config(bg="#f8f9fa")  # Default background
+                self.checkbuttons[index].config(bg="#f8f9fa")
     
     def toggle_fullscreen(self, event=None):
         """Toggle fullscreen mode"""
         self.fullscreen = not self.fullscreen
         self.master.attributes("-fullscreen", self.fullscreen)
-        return "break"  # Prevent event from propagating
+        return "break"
+    
+    def show_shortcuts(self):
+        """Show keyboard shortcuts in a popup"""
+        shortcuts_window = Toplevel(self.master)
+        shortcuts_window.title("Keyboard Shortcuts")
+        shortcuts_window.geometry("400x450")
+        shortcuts_window.configure(bg="#ffffff")
+        shortcuts_window.resizable(False, False)
+        
+        # Center the window
+        shortcuts_window.update_idletasks()
+        width = shortcuts_window.winfo_width()
+        height = shortcuts_window.winfo_height()
+        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.master.winfo_screenheight() // 2) - (height // 2)
+        shortcuts_window.geometry(f'+{x}+{y}')
+        
+        # Header
+        header_frame = Frame(shortcuts_window, bg="#2196f3", padx=10, pady=10)
+        header_frame.pack(fill="x")
+        
+        header_label = Label(
+            header_frame,
+            text="Keyboard Shortcuts",
+            font=("Segoe UI", 14, "bold"),
+            bg="#2196f3",
+            fg="white"
+        )
+        header_label.pack()
+        
+        # Content
+        content_frame = Frame(shortcuts_window, bg="#ffffff", padx=20, pady=15)
+        content_frame.pack(fill="both", expand=True)
+        
+        shortcuts = [
+            ("1-4", "Select answer options"),
+            ("Enter / Space", "Submit answer"),
+            ("→", "Next question"),
+            ("←", "Previous question"),
+            ("Ctrl+S", "Save progress"),
+            ("Ctrl+O", "Load progress"),
+            ("F11", "Toggle fullscreen"),
+            ("?", "Show this help")
+        ]
+        
+        for key, description in shortcuts:
+            shortcut_frame = Frame(content_frame, bg="#ffffff", pady=5)
+            shortcut_frame.pack(fill="x")
+            
+            key_label = Label(
+                shortcut_frame,
+                text=key,
+                font=("Segoe UI", 11, "bold"),
+                bg="#ffffff",
+                fg="#2196f3",
+                width=12,
+                anchor="w"
+            )
+            key_label.pack(side="left")
+            
+            desc_label = Label(
+                shortcut_frame,
+                text=description,
+                font=("Segoe UI", 11),
+                bg="#ffffff",
+                fg="#333333",
+                anchor="w"
+            )
+            desc_label.pack(side="left", fill="x", expand=True)
+        
+        # Close button
+        close_button = Button(
+            shortcuts_window,
+            text="Close",
+            command=shortcuts_window.destroy,
+            bg="#2196f3",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=20,
+            pady=5,
+            relief="flat"
+        )
+        close_button.pack(pady=15)
+        
+        shortcuts_window.transient(self.master)
+        shortcuts_window.grab_set()
+        
+    def show_about(self):
+        """Show about information"""
+        about_window = Toplevel(self.master)
+        about_window.title("About Quiz Master")
+        about_window.geometry("400x300")
+        about_window.configure(bg="#ffffff")
+        about_window.resizable(False, False)
+        
+        # Center the window
+        about_window.update_idletasks()
+        width = about_window.winfo_width()
+        height = about_window.winfo_height()
+        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.master.winfo_screenheight() // 2) - (height // 2)
+        about_window.geometry(f'+{x}+{y}')
+        
+        # Header
+        header_frame = Frame(about_window, bg="#2196f3", padx=10, pady=10)
+        header_frame.pack(fill="x")
+        
+        header_label = Label(
+            header_frame,
+            text="Quiz Master",
+            font=("Segoe UI", 14, "bold"),
+            bg="#2196f3",
+            fg="white"
+        )
+        header_label.pack()
+        
+        # Content
+        content_frame = Frame(about_window, bg="#ffffff", padx=20, pady=15)
+        content_frame.pack(fill="both", expand=True)
+        
+        about_text = """
+        Quiz Master is an interactive learning application
+        designed to help you test your knowledge.
+        
+        Version 2.0
+        
+        Created with Python and Tkinter
+        """
+        
+        about_label = Label(
+            content_frame,
+            text=about_text,
+            font=("Segoe UI", 11),
+            bg="#ffffff",
+            fg="#333333",
+            justify="center"
+        )
+        about_label.pack(pady=20)
+        
+        # Close button
+        close_button = Button(
+            about_window,
+            text="Close",
+            command=about_window.destroy,
+            bg="#2196f3",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=20,
+            pady=5,
+            relief="flat"
+        )
+        close_button.pack(pady=15)
+        
+        about_window.transient(self.master)
+        about_window.grab_set()
     
     def load_question(self):
         for widget in self.options_frame.winfo_children():
@@ -275,13 +470,14 @@ class QuizWindow:
             options = self.question_dict[question][0]  # answer_options
             self.answer_vars = []
             self.checkbuttons = []  # Store references to checkbuttons
+            self.option_frames = []  # Store references to option frames
             
-            # Options container with padding
-            options_container = Frame(self.options_frame, bg="#f8f8f8")
+            # Options container with modern styling
+            options_container = Frame(self.options_frame, bg="#f5f7fa")
             options_container.pack(fill="both", expand=True, padx=15, pady=10)
             
-            # Create a 2x2 grid for options
-            grid_frame = Frame(options_container, bg="#f8f8f8")
+            # Create a 2x2 grid for options with improved styling
+            grid_frame = Frame(options_container, bg="#f5f7fa")
             grid_frame.pack(expand=True, fill="both", pady=10)
             
             # Configure grid with equal weight to all columns and rows
@@ -298,42 +494,93 @@ class QuizWindow:
                     var = IntVar()
                     self.answer_vars.append(var)
                     
-                    # Each option gets its own frame for better styling
+                    # Each option gets its own frame with modern card styling
                     option_frame = Frame(
                         grid_frame, 
-                        bg="#f0f0f0", 
-                        bd=2, 
-                        relief="groove",
-                        padx=10,
-                        pady=10
+                        bg="#f8f9fa", 
+                        bd=1, 
+                        relief="solid",
+                        padx=15,
+                        pady=15,
+                        highlightbackground="#e0e0e0",
+                        highlightthickness=1
                     )
                     
                     row, col = positions[i]
-                    option_frame.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+                    option_frame.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
+                    self.option_frames.append(option_frame)
                     
-                    # Create checkbutton with fixed font
+                    # Option letter with circle background
+                    letter_frame = Frame(
+                        option_frame,
+                        bg="#e3f2fd",
+                        width=30,
+                        height=30,
+                        bd=0
+                    )
+                    letter_frame.pack(side="left", padx=(0, 10))
+                    letter_frame.pack_propagate(False)  # Prevent frame from shrinking
+                    
                     option_letter = chr(65 + i)  # A, B, C, D for options
+                    letter_label = Label(
+                        letter_frame,
+                        text=option_letter,
+                        font=("Segoe UI", 12, "bold"),
+                        bg="#e3f2fd",
+                        fg="#1976d2"
+                    )
+                    letter_label.place(relx=0.5, rely=0.5, anchor="center")
+                    
+                    # Create checkbutton with improved styling
                     check = Checkbutton(
                         option_frame,
-                        text=f"{option_letter}. {option}",
+                        text=option,
                         variable=var,
-                        wraplength=300,  # Adjusted for grid layout
-                        bg="#f0f0f0",
-                        activebackground="#e0f7fa",
+                        wraplength=350,
+                        bg="#f8f9fa",
+                        activebackground="#e3f2fd",
                         padx=5,
                         pady=5,
                         anchor="w",
                         justify="left",
-                        font=self.fonts['option']
+                        font=self.option_font,
+                        cursor="hand2"
                     )
-                    check.pack(expand=True, fill="both")
+                    check.pack(side="left", expand=True, fill="both")
                     self.checkbuttons.append(check)
                     
                     # Bind hover effects for better interactivity
-                    option_frame.bind("<Enter>", lambda e, frame=option_frame: frame.config(bg="#e8f5e9"))
-                    option_frame.bind("<Leave>", lambda e, frame=option_frame: frame.config(bg="#f0f0f0"))
-                    check.bind("<Enter>", lambda e, btn=check, frame=option_frame: [btn.config(bg="#e8f5e9"), frame.config(bg="#e8f5e9")])
-                    check.bind("<Leave>", lambda e, btn=check, frame=option_frame: [btn.config(bg="#f0f0f0"), frame.config(bg="#f0f0f0")])
+                    option_frame.bind("<Enter>", lambda e, frame=option_frame, btn=check: 
+                                     [frame.config(bg="#e3f2fd"), btn.config(bg="#e3f2fd")])
+                    option_frame.bind("<Leave>", lambda e, frame=option_frame, btn=check: 
+                                     [frame.config(bg="#f8f9fa"), btn.config(bg="#f8f9fa")])
+                    
+                    # Bind click on the entire frame to toggle the checkbox
+                    option_frame.bind("<Button-1>", lambda e, idx=i: self.toggle_option(idx))
+                    
+                    # If this question was previously answered, show the selection
+                    if question in self.answered_questions:
+                        correct_answers = self.question_dict[question][1]
+                        if not isinstance(correct_answers, list):
+                            correct_answers = [str(correct_answers)]
+                        else:
+                            correct_answers = [str(ans) for ans in correct_answers]
+                        
+                        # Remove any empty strings
+                        correct_answers = [ans for ans in correct_answers if ans.strip()]
+                        
+                        # If this option was selected and is correct
+                        if var.get() == 1 and options[i] in correct_answers:
+                            option_frame.config(bg="#e8f5e9")  # Light green
+                            check.config(bg="#e8f5e9")
+                        # If this option was selected but is incorrect
+                        elif var.get() == 1 and options[i] not in correct_answers:
+                            option_frame.config(bg="#ffebee")  # Light red
+                            check.config(bg="#ffebee")
+                        # If this option was not selected but is correct
+                        elif var.get() == 0 and options[i] in correct_answers:
+                            option_frame.config(bg="#e1f5fe")  # Light blue
+                            check.config(bg="#e1f5fe")
         else:
             self.show_results()
 
@@ -356,9 +603,10 @@ class QuizWindow:
         # Remove any empty strings
         correct_answers = [ans for ans in correct_answers if ans.strip()]
 
-        # Reset styling for all checkbuttons
-        for check in self.checkbuttons:
-            check.config(bg="#f8f8f8")
+        # Reset styling for all option frames and checkbuttons
+        for i, frame in enumerate(self.option_frames):
+            frame.config(bg="#f8f9fa")
+            self.checkbuttons[i].config(bg="#f8f9fa")
 
         if set(selected_options) == set(correct_answers):
             self.score += 1
@@ -366,10 +614,17 @@ class QuizWindow:
             self.result_var.set("✓ Correct!")
             self.result_label.config(fg="#4caf50")  # Green for correct
             
+            # Play success sound if available
+            try:
+                self.master.bell()  # Simple bell sound
+            except:
+                pass
+            
             # Highlight correct answers in green
             for i, val in enumerate(user_answers):
                 if val == 1:
-                    self.checkbuttons[i].config(bg="#c8e6c9")  # Light green background
+                    self.option_frames[i].config(bg="#e8f5e9")  # Light green background
+                    self.checkbuttons[i].config(bg="#e8f5e9")
                     
             # If this question was previously marked incorrect, remove it from the list
             if current_question in self.incorrect_questions:
@@ -385,15 +640,18 @@ class QuizWindow:
             self.result_var.set("✗ Incorrect! Try again or press Next to continue.")
             self.result_label.config(fg="#f44336")  # Red for incorrect
             
-            # Colorize feedback
+            # Colorize feedback with improved colors
             options = self.question_dict[current_question][0]
             for i, val in enumerate(user_answers):
                 if val == 1 and options[i] not in correct_answers:
-                    self.checkbuttons[i].config(bg="#ffcdd2")  # Light red for incorrect selection
+                    self.option_frames[i].config(bg="#ffebee")  # Light red for incorrect selection
+                    self.checkbuttons[i].config(bg="#ffebee")
                 elif val == 1 and options[i] in correct_answers:
-                    self.checkbuttons[i].config(bg="#c8e6c9")  # Light green for correct selection
+                    self.option_frames[i].config(bg="#e8f5e9")  # Light green for correct selection
+                    self.checkbuttons[i].config(bg="#e8f5e9")
                 elif val == 0 and options[i] in correct_answers:
                     # Light blue outline for missed correct answers
+                    self.option_frames[i].config(bg="#e1f5fe")
                     self.checkbuttons[i].config(bg="#e1f5fe")
         
         # Add the current question to answered questions set
@@ -512,8 +770,8 @@ class QuizWindow:
         """Open a new window to review incorrect questions"""
         review_window = Toplevel(self.master)
         review_window.title("Review Incorrect Questions")
-        review_window.geometry("900x700")
-        review_window.configure(bg="#f0f0f0")
+        review_window.geometry("1000x750")
+        review_window.configure(bg="#f5f7fa")
         
         # Create a simpler review quiz that won't affect the main window
         review_quiz = ReviewQuizWindow(review_window, review_dict)
@@ -570,202 +828,245 @@ class QuizWindow:
         except Exception as e:
             messagebox.showerror("Error", f"Could not load checkpoint: {str(e)}")
     
-    def show_incorrect_log(self):
-        """Display a window with incorrectly answered questions for revision"""
-        log_window = Tk()
-        log_window.title("Incorrect Questions Log")
-        log_window.geometry("1000x600")  # Increased size
-        log_window.configure(bg="#f0f0f0")
-        
-        # Header
-        header_frame = Frame(log_window, bg="#f44336", padx=10, pady=15)
-        header_frame.pack(fill="x")
-        
-        header_label = Label(
-            header_frame,
-            text="Questions for Review",
-            font=("Arial", 16, "bold"),
-            fg="white",
-            bg="#f44336"
-        )
-        header_label.pack()
-        
-        # Content area
-        content_frame = Frame(log_window, bg="#ffffff", padx=20, pady=15)
-        content_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        if self.incorrect_questions:
-            # Create a scrollable frame for questions
-            canvas = Canvas(content_frame, bg="#ffffff")
-            scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=canvas.yview)
-            scrollable_frame = Frame(canvas, bg="#ffffff")
-            
-            scrollable_frame.bind(
-                "<Configure>",
-                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-            )
-            
-            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-            canvas.configure(yscrollcommand=scrollbar.set)
-            
-            canvas.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-            
-            # Add each question with its correct answers
-            for i, question in enumerate(self.incorrect_questions):
-                question_frame = Frame(scrollable_frame, bg="#ffffff", padx=10, pady=5, bd=1, relief="solid")
-                question_frame.pack(fill="x", pady=5, padx=5)
-                
-                q_label = Label(
-                    question_frame,
-                    text=f"{i+1}. {question}",
-                    wraplength=600,
-                    justify="left",
-                    bg="#ffffff",
-                    anchor="w",
-                    font=("Arial", 11, "bold")
-                )
-                q_label.pack(anchor="w", pady=5)
-                
-                correct_answers = self.question_dict[question][1]
-                answers_text = ", ".join(correct_answers)
-                
-                a_label = Label(
-                    question_frame,
-                    text=f"Correct Answer(s): {answers_text}",
-                    wraplength=600,
-                    justify="left",
-                    bg="#ffffff",
-                    fg="#4caf50",
-                    anchor="w",
-                    font=("Arial", 10)
-                )
-                a_label.pack(anchor="w", pady=3)
-        else:
-            no_items_label = Label(
-                content_frame,
-                text="No incorrect answers recorded yet.",
-                font=("Arial", 12),
-                bg="#ffffff"
-            )
-            no_items_label.pack(pady=30)
-        
-        # Close button
-        close_button = Button(
-            log_window,
-            text="Close",
-            command=log_window.destroy,
-            bg="#607d8b",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            padx=20,
-            pady=5
-        )
-        close_button.pack(pady=15)
-        
-        # Make window modal
-        log_window.transient(self.master)
-        log_window.grab_set()
-        self.master.wait_window(log_window)
-
     def show_results(self):
-        # Create a nicer results window instead of a plain messagebox
-        results_window = Tk()
+        # Create a nicer results window with modern styling
+        results_window = Toplevel(self.master)
         results_window.title("Quiz Results")
-        results_window.geometry("600x500")
-        results_window.configure(bg="#f0f0f0")
+        results_window.geometry("700x600")
+        results_window.configure(bg="#ffffff")
         
-        # Results header
-        header_frame = Frame(results_window, bg="#2196f3", padx=10, pady=15)
+        # Center the window
+        results_window.update_idletasks()
+        width = results_window.winfo_width()
+        height = results_window.winfo_height()
+        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.master.winfo_screenheight() // 2) - (height // 2)
+        results_window.geometry(f'+{x}+{y}')
+        
+        # Results header with gradient background
+        header_frame = Frame(results_window, bg="#2196f3", padx=20, pady=20)
         header_frame.pack(fill="x")
         
         header_label = Label(
             header_frame,
             text="Quiz Completed!",
-            font=("Arial", 16, "bold"),
+            font=("Segoe UI", 18, "bold"),
             fg="white",
             bg="#2196f3"
         )
         header_label.pack()
         
-        # Score information
-        score_frame = Frame(results_window, bg="#ffffff", padx=20, pady=15)
-        score_frame.pack(fill="x", pady=10)
+        # Score information with card styling
+        score_frame = Frame(results_window, bg="#ffffff", padx=30, pady=20, bd=1, relief="solid")
+        score_frame.pack(fill="x", padx=20, pady=20)
         
+        percentage = (self.score / self.total_questions) * 100 if self.total_questions > 0 else 0
+        
+        # Score with large font
         score_label = Label(
             score_frame,
-            text=f"Your Score: {self.score} out of {self.total_questions}",
-            font=("Arial", 14, "bold"),
-            bg="#ffffff"
+            text=f"{self.score}/{self.total_questions}",
+            font=("Segoe UI", 36, "bold"),
+            bg="#ffffff",
+            fg="#2196f3"
         )
         score_label.pack(pady=5)
         
-        percentage = (self.score / self.total_questions) * 100
+        # Percentage with medium font
         percentage_label = Label(
             score_frame,
-            text=f"Percentage: {percentage:.1f}%",
-            font=("Arial", 12),
-            bg="#ffffff"
+            text=f"{percentage:.1f}%",
+            font=("Segoe UI", 18),
+            bg="#ffffff",
+            fg="#333333"
         )
         percentage_label.pack(pady=5)
         
-        # Incorrect questions section
+        # Performance message
+        if percentage >= 90:
+            message = "Excellent! You've mastered this material."
+        elif percentage >= 75:
+            message = "Great job! You have a good understanding."
+        elif percentage >= 60:
+            message = "Good work! Keep practicing to improve."
+        else:
+            message = "Keep studying! You'll improve with practice."
+        
+        performance_label = Label(
+            score_frame,
+            text=message,
+            font=("Segoe UI", 12),
+            bg="#ffffff",
+            fg="#555555"
+        )
+        performance_label.pack(pady=10)
+        
+        # Incorrect questions section with scrollable area
         if self.incorrect_questions:
             incorrect_frame = Frame(results_window, bg="#ffffff", padx=20, pady=10)
-            incorrect_frame.pack(fill="both", expand=True, pady=10)
+            incorrect_frame.pack(fill="both", expand=True, padx=20, pady=10)
             
             incorrect_header = Label(
                 incorrect_frame,
                 text="Questions to Review:",
-                font=("Arial", 12, "bold"),
+                font=("Segoe UI", 14, "bold"),
                 bg="#ffffff",
                 fg="#f44336"
             )
-            incorrect_header.pack(anchor="w", pady=5)
+            incorrect_header.pack(anchor="w", pady=10)
             
-            review_frame = Frame(incorrect_frame, bg="#ffffff")
-            review_frame.pack(fill="both", expand=True)
+            # Create a canvas with scrollbar for the review questions
+            canvas = Canvas(incorrect_frame, bg="#ffffff", highlightthickness=0)
+            scrollbar = ttk.Scrollbar(incorrect_frame, orient="vertical", command=canvas.yview)
+            
+            review_frame = Frame(canvas, bg="#ffffff")
+            
+            canvas.configure(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
+            canvas.pack(side="left", fill="both", expand=True)
+            
+            canvas.create_window((0, 0), window=review_frame, anchor="nw", tags="review_frame")
+            review_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
             
             for i, question in enumerate(self.incorrect_questions):
-                q_label = Label(
+                question_card = Frame(
                     review_frame,
-                    text=f"{i+1}. {question}",
+                    bg="#ffffff",
+                    padx=15,
+                    pady=10,
+                    bd=1,
+                    relief="solid",
+                    highlightbackground="#e0e0e0",
+                    highlightthickness=1
+                )
+                question_card.pack(fill="x", pady=5, padx=5)
+                
+                q_number = Label(
+                    question_card,
+                    text=f"{i+1}.",
+                    font=("Segoe UI", 11, "bold"),
+                    bg="#ffffff",
+                    fg="#f44336",
+                    anchor="nw"
+                )
+                q_number.pack(side="left", padx=(0, 5), anchor="n")
+                
+                q_text = Label(
+                    question_card,
+                    text=question,
                     wraplength=550,
                     justify="left",
                     bg="#ffffff",
-                    anchor="w"
+                    anchor="w",
+                    font=("Segoe UI", 11)
                 )
-                q_label.pack(anchor="w", pady=3)
+                q_text.pack(side="left", fill="x", expand=True, anchor="w")
+                
+                correct_answers = self.question_dict[question][1]
+                if not isinstance(correct_answers, list):
+                    correct_answers = [correct_answers]
+                
+                answers_text = ", ".join(correct_answers)
+                
+                a_label = Label(
+                    question_card,
+                    text=f"Correct Answer(s): {answers_text}",
+                    wraplength=550,
+                    justify="left",
+                    bg="#ffffff",
+                    fg="#4caf50",
+                    anchor="w",
+                    font=("Segoe UI", 10)
+                )
+                a_label.pack(anchor="w", pady=3, padx=(20, 0))
         else:
             perfect_frame = Frame(results_window, bg="#ffffff", padx=20, pady=20)
-            perfect_frame.pack(fill="x", pady=10)
+            perfect_frame.pack(fill="x", pady=20)
             
             perfect_label = Label(
                 perfect_frame,
                 text="Perfect Score! You answered all questions correctly.",
-                font=("Arial", 12),
+                font=("Segoe UI", 14),
                 bg="#ffffff",
                 fg="#4caf50"
             )
             perfect_label.pack(pady=10)
+            
+            # Add a trophy or celebration icon if available
+            try:
+                trophy_img = PhotoImage(file="trophy.png")
+                trophy_label = Label(perfect_frame, image=trophy_img, bg="#ffffff")
+                trophy_label.image = trophy_img  # Keep a reference
+                trophy_label.pack(pady=10)
+            except:
+                pass
+        
+        # Buttons frame
+        buttons_frame = Frame(results_window, bg="#ffffff", padx=20, pady=15)
+        buttons_frame.pack(fill="x", pady=10)
+        
+        # Review button - only show if there are incorrect questions
+        if self.incorrect_questions:
+            review_button = Button(
+                buttons_frame,
+                text="Review Incorrect Questions",
+                command=lambda: [results_window.destroy(), self.review_incorrect_questions()],
+                bg="#ff9800",
+                fg="white",
+                font=("Segoe UI", 10, "bold"),
+                padx=15,
+                pady=8,
+                relief="flat",
+                activebackground="#fb8c00",
+                activeforeground="white"
+            )
+            review_button.pack(side="left", padx=5)
         
         # Close button
         close_button = Button(
-            results_window,
-            text="Close",
+            buttons_frame,
+            text="Finish",
             command=lambda: [results_window.destroy(), self.master.quit()],
             bg="#e91e63",
             fg="white",
-            font=("Arial", 10, "bold"),
+            font=("Segoe UI", 10, "bold"),
             padx=20,
-            pady=5
+            pady=8,
+            relief="flat",
+            activebackground="#d81b60",
+            activeforeground="white"
         )
-        close_button.pack(pady=20)
+        close_button.pack(side="right", padx=5)
+        
+        # Restart button
+        restart_button = Button(
+            buttons_frame,
+            text="Restart Quiz",
+            command=lambda: [results_window.destroy(), self.restart_quiz()],
+            bg="#4caf50",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat",
+            activebackground="#43a047",
+            activeforeground="white"
+        )
+        restart_button.pack(side="right", padx=5)
         
         # Make sure the window stays on top and becomes the focus
         results_window.transient(self.master)
         results_window.grab_set()
         self.master.wait_window(results_window)
+    
+    def restart_quiz(self):
+        """Restart the quiz from the beginning"""
+        self.question_index = 0
+        self.score = 0
+        self.incorrect_questions = []
+        self.answered_questions = set()
+        self.update_score_display()
+        self.load_question()
 
 class ReviewQuizWindow(QuizWindow):
     """A specialized version of QuizWindow for reviewing incorrect questions"""
@@ -779,14 +1080,16 @@ class ReviewQuizWindow(QuizWindow):
         
         # Update title and add a note
         self.master.title("Review Incorrect Questions")
-        note_label = Label(
+        
+        # Add a review mode indicator
+        self.review_label = Label(
             self.header_frame,
             text="REVIEW MODE",
-            font=("Arial", 10, "bold"),
-            bg="#e1e1e1",
+            font=("Segoe UI", 10, "bold"),
+            bg="#e8eef7",
             fg="#f44336"
         )
-        note_label.pack(side="right", padx=10, pady=5)
+        self.review_label.pack(side="right", padx=10, pady=5)
     
     def close_review(self):
         """Custom close method that only closes this window"""
@@ -797,54 +1100,100 @@ class ReviewQuizWindow(QuizWindow):
         results_window = Toplevel(self.master)
         results_window.title("Review Results")
         results_window.geometry("600x500")
-        results_window.configure(bg="#f0f0f0")
+        results_window.configure(bg="#ffffff")
+        
+        # Center the window
+        results_window.update_idletasks()
+        width = results_window.winfo_width()
+        height = results_window.winfo_height()
+        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.master.winfo_screenheight() // 2) - (height // 2)
+        results_window.geometry(f'+{x}+{y}')
         
         # Results header
-        header_frame = Frame(results_window, bg="#2196f3", padx=10, pady=15)
+        header_frame = Frame(results_window, bg="#2196f3", padx=20, pady=20)
         header_frame.pack(fill="x")
         
         header_label = Label(
             header_frame,
             text="Review Completed!",
-            font=("Arial", 16, "bold"),
+            font=("Segoe UI", 18, "bold"),
             fg="white",
             bg="#2196f3"
         )
         header_label.pack()
         
         # Score information
-        score_frame = Frame(results_window, bg="#ffffff", padx=20, pady=15)
-        score_frame.pack(fill="x", pady=10)
+        score_frame = Frame(results_window, bg="#ffffff", padx=30, pady=20)
+        score_frame.pack(fill="x", pady=20)
         
         score_label = Label(
             score_frame,
-            text=f"Your Score: {self.score} out of {self.total_questions}",
-            font=("Arial", 14, "bold"),
+            text=f"Your Score: {self.score}/{self.total_questions}",
+            font=("Segoe UI", 16, "bold"),
             bg="#ffffff"
         )
         score_label.pack(pady=5)
         
-        percentage = (self.score / self.total_questions) * 100
+        percentage = (self.score / self.total_questions) * 100 if self.total_questions > 0 else 0
         percentage_label = Label(
             score_frame,
             text=f"Percentage: {percentage:.1f}%",
-            font=("Arial", 12),
+            font=("Segoe UI", 14),
             bg="#ffffff"
         )
         percentage_label.pack(pady=5)
         
+        # Performance message
+        if percentage >= 90:
+            message = "Excellent! You've mastered these questions."
+        elif percentage >= 75:
+            message = "Great job! Keep up the good work."
+        elif percentage >= 60:
+            message = "Good progress! Keep practicing."
+        else:
+            message = "Keep studying! You'll improve with practice."
+        
+        performance_label = Label(
+            score_frame,
+            text=message,
+            font=("Segoe UI", 12),
+            bg="#ffffff",
+            fg="#555555"
+        )
+        performance_label.pack(pady=10)
+        
+        # Buttons frame
+        buttons_frame = Frame(results_window, bg="#ffffff", padx=20, pady=15)
+        buttons_frame.pack(fill="x", pady=20)
+        
         # Close button - only close the review windows, not the main app
         close_button = Button(
-            results_window,
+            buttons_frame,
             text="Close",
             command=lambda: [results_window.destroy(), self.master.destroy()],
             bg="#e91e63",
             fg="white",
-            font=("Arial", 10, "bold"),
+            font=("Segoe UI", 10, "bold"),
             padx=20,
-            pady=5
+            pady=8,
+            relief="flat"
         )
-        close_button.pack(pady=20)
+        close_button.pack(side="right", padx=5)
+        
+        # Restart review button
+        restart_button = Button(
+            buttons_frame,
+            text="Restart Review",
+            command=lambda: [results_window.destroy(), self.restart_quiz()],
+            bg="#4caf50",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat"
+        )
+        restart_button.pack(side="right", padx=5)
         
         # Make window modal to its parent
         results_window.transient(self.master)
@@ -864,11 +1213,10 @@ if __name__ == "__main__":
             continue
             
         # Extract the question (first line)
-        # lines = question.splitlines()
         lines = question.split(r"A: ", 1)
         if len(lines) < 2:
             continue
-        # print(lines)
+        
         cur_ques = lines[0].strip()
         
         # Join all lines for regex processing

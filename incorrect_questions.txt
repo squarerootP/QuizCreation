@@ -6,3 +6,21 @@ D: Broad Network Access
 &&&&
 Hybrid
 %%%%
+What are some cloud computing benefits? Select two.
+A: Purchasing off-the-shelf software and upgrades
+B: Diversity of standardization in how the constantly evolving technologies integrate and interoperate.
+C: Competitive advantage
+D: Flexibility and efficiency
+&&&&
+Competitive advantage
+Flexibility and efficiency
+%%%%
+What are some of the cloud benefits that make it lower-risk for enterprises to adopt cloud? Select two.
+A: Data security associated with loss or unavailability of data causing business disruption
+B: The speed with which applications can be up and running on the cloud versus months on traditional platforms, means enterprises can experiment, fail fast, learn, and course correct without setting them back significantly.
+C: The pay-as-you-go model allows enterprises to experiment with technologies as opposed to making long-term decisions based on little or no trial.
+D: Diversity of standardization in how the constantly evolving technologies integrate and interoperate.
+&&&&
+The speed with which applications can be up and running on the cloud versus months on traditional platforms, means enterprises can experiment, fail fast, learn, and course correct without setting them back significantly.
+The pay-as-you-go model allows enterprises to experiment with technologies as opposed to making long-term decisions based on little or no trial.
+%%%%
