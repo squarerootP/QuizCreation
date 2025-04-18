@@ -468,6 +468,25 @@ class QuizWindow:
             self.selected_answers = []
 
             options = self.question_dict[question][0]  # answer_options
+            
+            # Create a copy of the options and shuffle them for display
+            self.options_mapping = {}  # Maps shuffled index -> original index
+            self.original_options = options.copy() if isinstance(options, list) else options
+            
+            # Create list of tuples (original_index, option_text)
+            indexed_options = list(enumerate(self.original_options))
+            # Shuffle the options
+            random.shuffle(indexed_options)
+            
+            # Create the shuffled options list and the mapping
+            shuffled_options = []
+            for i, (original_idx, option_text) in enumerate(indexed_options):
+                shuffled_options.append(option_text)
+                self.options_mapping[i] = original_idx
+            
+            # Use the shuffled options for display
+            options = shuffled_options
+            
             self.answer_vars = []
             self.checkbuttons = []  # Store references to checkbuttons
             self.option_frames = []  # Store references to option frames
@@ -586,12 +605,27 @@ class QuizWindow:
 
     def submit_answer(self):
         user_answers = [var.get() for var in self.answer_vars]
+        
+        # Map the selected shuffled indices back to original indices
+        original_selected_indices = []
+        for i, selected in enumerate(user_answers):
+            if selected == 1:
+                # Get the original index for this shuffled position
+                if hasattr(self, 'options_mapping') and i in self.options_mapping:
+                    original_idx = self.options_mapping[i]
+                    original_selected_indices.append(original_idx)
+                else:
+                    original_selected_indices.append(i)  # Fallback to original index
+        
+        # Get the selected options using original indices
+        current_question = list(self.question_dict.keys())[self.question_index]
+        original_options = self.question_dict[current_question][0]
+        
         selected_options = [
-            self.question_dict[list(self.question_dict.keys())[self.question_index]][0][i]
-            for i, val in enumerate(user_answers) if val == 1
+            original_options[idx] for idx in original_selected_indices
+            if idx < len(original_options)
         ]
         
-        current_question = list(self.question_dict.keys())[self.question_index]
         correct_answers = self.question_dict[current_question][1]  # correct_options
         
         # Ensure correct_answers is treated as a list of strings

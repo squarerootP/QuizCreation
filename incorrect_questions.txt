@@ -1,26 +1,265 @@
-Which cloud deployment model lets users use multiple cloud models working together seamlessly?
-A: Hybrid
-B: Public
-C: Private
-D: Broad Network Access
+Which one of the provided options is true for Infrastructure-as-a-Service?
+A: Cloud provider manages the physical resources, operating systems, development tools, databases, and business analytics
+B: Cloud provider manages the physical resources, the platform resources, applications, and data
+C: Cloud provider owns, manages, and maintains the physical resources
+D: Cloud provider configures the infrastructure which is managed and maintained by the user/customer organization
 &&&&
-Hybrid
+Cloud provider owns, manages, and maintains the physical resources
 %%%%
-What are some cloud computing benefits? Select two.
-A: Purchasing off-the-shelf software and upgrades
-B: Diversity of standardization in how the constantly evolving technologies integrate and interoperate.
-C: Competitive advantage
-D: Flexibility and efficiency
+What benefits do runtime engines provide to containers?
+A: Serves as an interface between the VM and underlying physical hardware
+B: Share the operating system (OS) with other containers
+C: Allows multiple OS and applications to run simultaneously and share resources
+D: Uses device drivers targeting the abstract machine
 &&&&
-Competitive advantage
-Flexibility and efficiency
+Share the operating system (OS) with other containers
 %%%%
-What are some of the cloud benefits that make it lower-risk for enterprises to adopt cloud? Select two.
-A: Data security associated with loss or unavailability of data causing business disruption
-B: The speed with which applications can be up and running on the cloud versus months on traditional platforms, means enterprises can experiment, fail fast, learn, and course correct without setting them back significantly.
-C: The pay-as-you-go model allows enterprises to experiment with technologies as opposed to making long-term decisions based on little or no trial.
-D: Diversity of standardization in how the constantly evolving technologies integrate and interoperate.
+Which of these scenarios are best suited for Block Storage? Select two.
+A: Applications that need consistent fast access to disk, such as databases
+B: Low cost is a consideration
+C: Workloads that need disk sharing between compute nodes
+D: Workloads that need low-latency storage
 &&&&
-The speed with which applications can be up and running on the cloud versus months on traditional platforms, means enterprises can experiment, fail fast, learn, and course correct without setting them back significantly.
-The pay-as-you-go model allows enterprises to experiment with technologies as opposed to making long-term decisions based on little or no trial.
+Applications that need consistent fast access to disk, such as databases
+Workloads that need low-latency storage
+%%%%
+Which one of the following statements does NOT describe the DevOps approach and process?
+A: A collaborative approach where business owners and development, operations, and quality assurance teams collaborate to deliver software continuously
+B: Defines how people work together to build, deploy, and manage applications in a cloud native environment
+C: Eliminates the need to provision servers, build middleware, and install application code
+D: Uses automated tools to monitor the performance and availability of their applications
+&&&&
+Eliminates the need to provision servers, build middleware, and install application code
+%%%%
+The Weather Company migrated its weather web property to a secure, scalable, and global architecture in the IBM Cloud. What are some of the benefits they realized as a result of this migration? Select two.
+A: Faster development and release of new apps and digital self-service tools to customers
+B: Optimize their systems for elasticity in handling extreme spikes in demand which can mean a difference between life and death for its users
+C: Increase asset availability and overall equipment effectiveness
+D: Harness local data centers to minimize latency for users spread across the globe
+&&&&
+Optimize their systems for elasticity in handling extreme spikes in demand which can mean a difference between life and death for its users
+Harness local data centers to minimize latency for users spread across the globe
+%%%%
+What does the following statement do?
+var ndate = new Date() ;
+A: Assigns the current Greenwich Mean Time to ndate
+B: Assigns the current local time to ndate
+C: Returns an error
+D: Assigns an empty string with the properties of dates to ndate
+&&&&
+Assigns the current local time to ndate
+%%%%
+Which of the following is a feature of the Git Repository model?
+A: Two-tree system
+B: Centralized version-control
+C: Strict line workflow
+D: Source code tracking
+&&&&
+Source code tracking
+%%%%
+Which GitHub developer command prepares an email submission in a form appropriate for a Linux kernel-style public workflow?
+A: git-send-email
+B: git-format-patch
+C: git-request-email
+D: git-request-pull
+&&&&
+git-format-patch
+%%%%
+Which new ES6 feature doesn't allow you to reassign a variable in the same code block?
+A: const
+B: Arrow functions
+C: Promise
+D: let
+&&&&
+const
+%%%%
+Which of the following is an example of a shared state?
+A: An application with a button and counter
+B: Tags for ID, name, and age
+C: List of all orders in an order application
+D: Hiding and showing information
+&&&&
+List of all orders in an order application
+%%%%
+Which of the following does NOT represent one of the three main Cloud Service Models referred to in the course?
+A: CaaS
+B: SaaS
+C: IaaS
+D: PaaS
+&&&&
+CaaS
+%%%%
+What do we mean when we say that the Hybrid Cloud is interoperable?
+A: You are no longer locked-in with a specific vendor
+B: When there is a spike in demand, a workload running on the private cloud can leverage the additional public cloud capacity
+C: Organizations can choose to run their sensitive workloads on a private cloud
+D: The public and private cloud services can understand each other's APIs, configuration, data formats, and forms of authentication and authorization
+&&&&
+The public and private cloud services can understand each other's APIs, configuration, data formats, and forms of authentication and authorization
+%%%%
+Virtualization is the process of creating a software-based or virtual version of something. What is typically created with virtualization in the cloud?
+A: Servers, storage devices, networking resources, and applications
+B: VMware ESX and ESXI, Microsoft Hyper-V, open-source KVM
+C: Oracle VirtualBox, VMware Workstation
+D: Windows, Linux, UNIX
+&&&&
+Servers, storage devices, networking resources, and applications
+%%%%
+Which tag is used to represent an independent item of content in a document, which can be meaningful on its own?
+A: <section>
+B: <details>
+C: <div>
+D: <article>
+&&&&
+<article>
+%%%%
+Under which tab on GitHub will you find all the source files for a repository?
+A: Projects
+B: <> Code
+C: Settings
+D: Pull Requests
+&&&&
+<> Code
+%%%%
+You need to run three commands to push local changes to the GitHub repository. What is the third command?
+A: git-commit -m
+B: git-add
+C: git-push
+D: git-remove -v
+&&&&
+git-push
+%%%%
+Which of the following features can be implemented using React Hook in functional components?
+A: Event
+B: Lifecycle methods
+C: Logic
+D: Props
+&&&&
+Lifecycle methods
+%%%%
+What do you use to make a call to an external server asynchronous?
+A: Props
+B: Method
+C: Promises
+D: State
+&&&&
+Promises
+%%%%
+What is Redux?
+A: A function
+B: A state management system
+C: A properties store
+D: A complex code management system
+&&&&
+A state management system
+%%%%
+Which Redux element is the singular location and authoritative source of the app state?
+A: Action
+B: Result
+C: Reducer
+D: Store
+&&&&
+Store
+%%%%
+Which are the elements of a conventional React-Redux application?
+A: Store and a global variable
+B: Multiple stores
+C: Multiple Reducers
+D: Single store and single root Reducer
+&&&&
+Single store and single root Reducer
+%%%%
+What helps developers in developing a React application using Redux?
+A: Redux reloads the whole page when state changes
+B: Redux helps in creating user interface elements
+C: Redux enhances the state prediction factor
+D: In Redux, individual components handle their own state
+&&&&
+Redux enhances the state prediction factor
+%%%%
+In which application scenarios is Redux used?
+A: In applications with single state mapping to a single container component
+B: In an application where all props associated to a component are utilized
+C: Only in local applications to manage state of components
+D: Big application where state needs to be managed
+&&&&
+Big application where state needs to be managed
+%%%%
+What is the function of the store?
+A: A store can perform any changes to the application state
+B: A Store can dispatch and receive actions
+C: A store describes what happened
+D: A store contains a type field
+&&&&
+A Store can dispatch and receive actions
+%%%%
+Why is middleware required in Redux React applications?
+A: To restore the synchronous data flow
+B: To compute the new state
+C: To use asynchronous operations
+D: To make actions faster
+&&&&
+To use asynchronous operations
+%%%%
+How can you handle incoming request messages and return response messages with a web server?
+A: Import a Node.js module
+B: Group Node.js modules into a package
+C: Set the web server to listen to a port
+D: Develop a callback function
+&&&&
+Develop a callback function
+%%%%
+How do you make a function or a value available to Node.js applications that import your module?
+A: Edit the module manifest
+B: Add a property to exports
+C: Use the http.createServer function
+D: Create an instance of a web server application
+&&&&
+Add a property to exports
+%%%%
+Before the Node.js framework receives the HTTP response message from the remote web server, it immediately returns a result for the http.request function call. What does this result state?
+A: A request is in progress.
+B: The callback function was called successfully.
+C: The return message will be sent successfully.
+D: The response message will be sent successfully.
+&&&&
+A request is in progress.
+%%%%
+Which web application framework is based on the Node.js runtime environment?
+A: XML-JS
+B: Express
+C: JSON
+D: Async.js
+&&&&
+Express
+%%%%
+What is the result of the following: int(3.99)
+A: 3
+B: 3.99
+&&&&
+3
+%%%%
+What information are we trying to find for each day in the lab for the chart?
+A: Open (First), High (Max), Low (Min), Close (Last)
+B: Open (Min), High (First), Low (Max), Close (Last)
+C: Open (Max), High (First), Low (Last), Close (Min)
+D: Open (Last), High (Max), Low (Min), Close (First)
+&&&&
+Open (First), High (Max), Low (Min), Close (Last)
+%%%%
+What is webscraping?
+A: The process to extract data from a particular website
+B: The process to describe communication options
+C: The process to display all data within a URL
+D: The process to request and retrieve information from a client
+&&&&
+The process to extract data from a particular website
+%%%%
+Consider the file object: File1.What would the following line of code output?
+for n in range(0,2): print(file1.readline())
+A: It would output 2 characters from the text file
+B: It would output the entire text file
+C: It would output the first 2 lines from the text file
+&&&&
+It would output the first 2 lines from the text file
 %%%%
